@@ -1,0 +1,6 @@
+streamlit
+langgraph
+langchain
+requests
+matplotlib
+pandas
