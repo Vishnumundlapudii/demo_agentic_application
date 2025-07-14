@@ -25,7 +25,9 @@ class E2ELLMClient:
             base_url: E2E Networks API base URL (can be set via environment variable E2E_BASE_URL)
         """
         self.api_key = api_key or os.getenv("E2E_API_KEY")
-        self.base_url = base_url or os.getenv("E2E_BASE_URL", "https://infer.e2enetworks.net/project/p-5861/endpoint/is-5691/v1")
+        # Clean up base URL to avoid double slashes
+        base_url_raw = base_url or os.getenv("E2E_BASE_URL", "https://infer.e2enetworks.net/project/p-5861/endpoint/is-5691/v1")
+        self.base_url = base_url_raw.rstrip('/')
         
         # Load additional configuration from environment
         self.default_model = os.getenv("E2E_MODEL_NAME", "meta-llama/Llama-2-7b-chat-hf")
@@ -76,38 +78,74 @@ class E2ELLMClient:
                 "messages": messages,
                 "max_tokens": max_tokens or self.default_max_tokens,
                 "temperature": temperature or self.default_temperature,
-                "stream": False,
-                "top_p": 0.9,
-                "frequency_penalty": 0,
-                "presence_penalty": 0
+                "stream": False
             }
             
-            # Make API call to E2E Networks endpoint
-            response = requests.post(
+            # Try different endpoint formats for E2E Networks
+            endpoints_to_try = [
                 f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json=payload,
-                timeout=self.timeout
-            )
+                f"{self.base_url}/completions", 
+                f"{self.base_url}/generate",
+                f"{self.base_url}/v1/chat/completions",
+                f"{self.base_url}/inference",
+                f"{self.base_url}"
+            ]
             
-            print(f"Debug: API call to {self.base_url}/chat/completions")
-            print(f"Debug: Response status: {response.status_code}")
-            print(f"Debug: Response headers: {dict(response.headers)}")
-            if response.status_code != 200:
-                print(f"Debug: Response text: {response.text}")
+            response = None
+            for endpoint in endpoints_to_try:
+                try:
+                    print(f"Debug: Trying endpoint: {endpoint}")
+                    response = requests.post(
+                        endpoint,
+                        headers=self.headers,
+                        json=payload,
+                        timeout=self.timeout
+                    )
+                    print(f"Debug: Response status: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        print(f"✅ Success with endpoint: {endpoint}")
+                        break
+                    elif response.status_code in [404, 405]:
+                        print(f"❌ {response.status_code} - trying next endpoint")
+                        continue
+                    else:
+                        print(f"Debug: Response text: {response.text}")
+                        break
+                        
+                except Exception as e:
+                    print(f"Debug: Error with {endpoint}: {str(e)}")
+                    continue
+            
+            if not response:
+                return "Error: Unable to connect to any E2E endpoint"
             
             # Handle response
-            if response.status_code == 200:
-                data = response.json()
-                if "choices" in data and len(data["choices"]) > 0:
-                    return data["choices"][0]["message"]["content"]
-                else:
-                    print(f"⚠️ Unexpected response format: {data}")
-                    return "Error: Unexpected response format from E2E API"
+            if response and response.status_code == 200:
+                try:
+                    data = response.json()
+                    print(f"Debug: Response data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                    
+                    # Try different response formats
+                    if "choices" in data and len(data["choices"]) > 0:
+                        return data["choices"][0]["message"]["content"]
+                    elif "response" in data:
+                        return data["response"]
+                    elif "text" in data:
+                        return data["text"]
+                    elif "output" in data:
+                        return data["output"]
+                    elif isinstance(data, str):
+                        return data
+                    else:
+                        print(f"⚠️ Unexpected response format: {data}")
+                        return f"Error: Unexpected response format from E2E API. Keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}"
+                except json.JSONDecodeError:
+                    return f"Error: Invalid JSON response: {response.text}"
             else:
-                error_msg = f"E2E API Error {response.status_code}: {response.text}"
+                error_msg = f"E2E API Error {response.status_code if response else 'No response'}: {response.text if response else 'Connection failed'}"
                 print(f"⚠️ {error_msg}")
-                return f"Error calling E2E LLM API: {response.status_code}"
+                return f"Error calling E2E LLM API: {response.status_code if response else 'Connection failed'}"
                 
         except requests.RequestException as e:
             error_msg = f"Network error calling E2E API: {str(e)}"
