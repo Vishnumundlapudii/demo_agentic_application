@@ -231,10 +231,10 @@ with col2:
     
     if "Multi-Agent" in agent_mode:
         # Show E2E integration status
-    client = get_e2e_client()
-    e2e_status = "🟢 E2E LLM Integrated" if client else "🔴 E2E LLM Not Connected"
-    
-    st.info(f"""
+        client = get_e2e_client()
+        e2e_status = "🟢 E2E LLM Integrated" if client else "🔴 E2E LLM Not Connected"
+        
+        st.info(f"""
         **🤖 Multi-Agent System**
         
         **Status:** {e2e_status}
