@@ -6,9 +6,11 @@ Interactive web interface for testing agent capabilities
 import streamlit as st
 import time
 import json
+import os
 from datetime import datetime
 from agents import SimpleAgent
 from multi_agent_workflow import MultiAgentSystem
+from e2e_llm_client import initialize_e2e_client, get_e2e_client, E2ELLMClient
 
 # Page configuration
 st.set_page_config(
@@ -30,6 +32,49 @@ if 'conversation_history' not in st.session_state:
 
 # Sidebar configuration
 st.sidebar.title("🤖 Agent System Demo")
+st.sidebar.markdown("---")
+
+# E2E Networks API Configuration
+st.sidebar.subheader("🔧 E2E Networks Configuration")
+
+api_key = st.sidebar.text_input(
+    "E2E API Key",
+    type="password",
+    help="Enter your E2E Networks API key",
+    placeholder="sk-..."
+)
+
+base_url = st.sidebar.text_input(
+    "E2E Base URL (Optional)",
+    value="https://api.e2enetworks.com/v1",
+    help="E2E Networks API base URL"
+)
+
+# Initialize E2E client when API key is provided
+if api_key:
+    try:
+        initialize_e2e_client(api_key, base_url)
+        client = get_e2e_client()
+        
+        # Test connection button
+        if st.sidebar.button("🧪 Test E2E Connection"):
+            with st.sidebar:
+                with st.spinner("Testing connection..."):
+                    test_result = client.test_connection()
+                    
+                    if test_result["status"] == "success":
+                        st.success("✅ E2E API Connected!")
+                    else:
+                        st.error(f"❌ Connection failed: {test_result['response']}")
+        
+        # Show connection status
+        st.sidebar.success("🟢 E2E API Configured")
+        
+    except Exception as e:
+        st.sidebar.error(f"❌ E2E API Error: {str(e)}")
+else:
+    st.sidebar.warning("⚠️ E2E API key required for enhanced features")
+
 st.sidebar.markdown("---")
 
 # Agent selection
@@ -164,28 +209,41 @@ with col2:
     st.subheader("🎯 System Info")
     
     if "Multi-Agent" in agent_mode:
-        st.info("""
+        # Show E2E integration status
+    client = get_e2e_client()
+    e2e_status = "🟢 E2E LLM Integrated" if client else "🔴 E2E LLM Not Connected"
+    
+    st.info(f"""
         **🤖 Multi-Agent System**
+        
+        **Status:** {e2e_status}
         
         **Agents Available:**
         - 🎯 Coordinator: Plans & orchestrates
-        - 🔍 Research: Information gathering
+        - 🔍 Research: E2E-powered information gathering
         - 📊 Analysis: Math & data processing  
-        - ✍️ Writing: Content generation
+        - ✍️ Writing: E2E-powered content generation
         
         **Capabilities:**
         - Complex multi-step tasks
         - Agent collaboration
         - Dynamic task planning
         - Result aggregation
+        - **E2E LLM Integration**
         """)
     else:
-        st.info("""
+        # Show E2E integration status for simple agent
+        client = get_e2e_client()
+        e2e_status = "🟢 E2E LLM Integrated" if client else "🔴 E2E LLM Not Connected"
+        
+        st.info(f"""
         **⚡ Simple Agent System**
+        
+        **Status:** {e2e_status}
         
         **Capabilities:**
         - Basic math calculations
-        - Simple conversations
+        - E2E-powered conversations
         - Quick responses
         - Single-step processing
         
@@ -215,9 +273,17 @@ if st.session_state.conversation_history:
 
 # Footer
 st.markdown("---")
+# Show overall system status
+client = get_e2e_client()
+if client:
+    st.success("🟢 **E2E Networks LLM**: Connected and ready for enhanced AI capabilities!")
+else:
+    st.warning("⚠️ **E2E Networks LLM**: Not connected. Using fallback responses. Add your API key in the sidebar for full functionality.")
+
 st.markdown("""
 <div style='text-align: center'>
     <p>🚀 <strong>Multi-Agent AI System Demo</strong> | Built with Streamlit & LangGraph</p>
     <p>💡 Experiment with different query types to see how agents collaborate!</p>
+    <p>🔗 <strong>Enhanced with E2E Networks LLM for intelligent responses</strong></p>
 </div>
 """, unsafe_allow_html=True)

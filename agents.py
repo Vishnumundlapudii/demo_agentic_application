@@ -11,11 +11,35 @@ import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from langchain.tools import tool
+from e2e_llm_client import call_e2e_llm, get_e2e_client
 
 # Agent Tools
 @tool
 def web_search(query: str) -> str:
-    """Simulate web search for research tasks"""
+    """Enhanced web search using E2E Networks LLM for research tasks"""
+    # First try E2E LLM for enhanced search
+    client = get_e2e_client()
+    if client:
+        search_prompt = f"""Provide comprehensive information about: {query}
+        
+Please include:
+        - Key concepts and definitions
+        - Current developments and trends
+        - Practical applications
+        - Important facts and statistics
+        
+Format the response as informative research findings."""
+        
+        llm_result = call_e2e_llm(
+            search_prompt,
+            system_message="You are a research assistant providing accurate, up-to-date information.",
+            max_tokens=300
+        )
+        
+        if not llm_result.startswith("⚠️") and not llm_result.startswith("Error"):
+            return f"🔍 **E2E Research Results:** {llm_result}"
+    
+    # Fallback to static knowledge base
     search_results = {
         "python programming": "Python is a high-level programming language known for its simplicity and versatility. Latest version is 3.12.",
         "machine learning": "Machine learning is a subset of AI that enables computers to learn without explicit programming. Popular frameworks include TensorFlow and PyTorch.",
@@ -28,9 +52,9 @@ def web_search(query: str) -> str:
     
     for topic, result in search_results.items():
         if topic.lower() in query.lower():
-            return f"🔍 Search Results: {result}"
+            return f"🔍 **Fallback Research:** {result}"
     
-    return f"🔍 Search Results: Found general information about '{query}'. This topic is actively researched with many recent developments."
+    return f"🔍 **Fallback Research:** Found general information about '{query}'. This topic is actively researched with many recent developments."
 
 @tool
 def advanced_calculator(expression: str) -> str:
@@ -66,7 +90,28 @@ def data_visualizer(data_description: str) -> str:
 
 @tool
 def content_generator(topic: str, style: str = "informative") -> str:
-    """Generate content based on topic and style"""
+    """Generate content using E2E Networks LLM based on topic and style"""
+    client = get_e2e_client()
+    if client:
+        style_prompts = {
+            "informative": f"Write a comprehensive, informative guide about {topic}. Include key concepts, applications, and best practices. Make it educational and well-structured.",
+            "summary": f"Write a concise summary about {topic}. Focus on the most important points and practical applications. Keep it brief but informative.",
+            "technical": f"Write technical documentation about {topic}. Include implementation details, specifications, and technical considerations. Use precise technical language.",
+            "creative": f"Write a creative exploration of {topic}. Use unique perspectives, innovative angles, and engaging storytelling while maintaining accuracy."
+        }
+        
+        prompt = style_prompts.get(style, style_prompts["informative"])
+        
+        llm_result = call_e2e_llm(
+            prompt,
+            system_message=f"You are a skilled writer creating {style} content. Write clearly and engagingly.",
+            max_tokens=400
+        )
+        
+        if not llm_result.startswith("⚠️") and not llm_result.startswith("Error"):
+            return f"📝 **E2E Generated Content:** {llm_result}"
+    
+    # Fallback to static templates
     styles = {
         "informative": f"📝 Comprehensive guide on {topic} covering key concepts, applications, and best practices.",
         "summary": f"📋 Quick summary: {topic} is an important concept with significant practical applications.",
@@ -74,7 +119,7 @@ def content_generator(topic: str, style: str = "informative") -> str:
         "creative": f"✨ Creative exploration of {topic} from unique perspectives and innovative angles."
     }
     
-    return styles.get(style, styles["informative"])
+    return f"📝 **Fallback Content:** {styles.get(style, styles['informative'])}"
 
 # Multi-Agent State Management
 class MultiAgentState:
@@ -281,20 +326,37 @@ class SimpleAgent:
         return state
     
     def _chat_response(self, state: Dict) -> Dict:
-        user_input = state["user_input"].lower()
+        user_input = state["user_input"]
+        user_input_lower = user_input.lower()
         
+        # Check for predefined responses first
         responses = {
             "how are you": "I'm doing great! I'm a helpful AI agent that can chat and do math calculations.",
-            "who are you": "I'm a simple LangGraph agent. I can help with conversations and mathematical calculations!",
+            "who are you": "I'm a simple LangGraph agent powered by E2E Networks. I can help with conversations and mathematical calculations!",
             "hello": "Hello! How can I help you today? I can chat or help with math calculations.",
             "hi": "Hi there! How can I help you today? I can chat or help with math calculations."
         }
         
         for pattern, response in responses.items():
-            if pattern in user_input:
+            if pattern in user_input_lower:
                 state["result"] = response
                 return state
         
-        # Default response
-        state["result"] = "I'm a helpful AI assistant. I can help with math calculations and simple conversations!"
+        # Use E2E LLM for general conversations
+        client = get_e2e_client()
+        if client:
+            chat_prompt = f"You are a helpful AI assistant. Please respond to this message naturally and helpfully: {user_input}"
+            
+            llm_result = call_e2e_llm(
+                chat_prompt,
+                system_message="You are a friendly and helpful AI assistant. Keep responses concise but informative.",
+                max_tokens=150
+            )
+            
+            if not llm_result.startswith("⚠️") and not llm_result.startswith("Error"):
+                state["result"] = f"🤖 {llm_result}"
+                return state
+        
+        # Fallback response
+        state["result"] = "I'm a helpful AI assistant powered by E2E Networks. I can help with math calculations and conversations!"
         return state

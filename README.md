@@ -1,17 +1,17 @@
 # 🤖 Multi-Agent AI System Demo
 
-An interactive Streamlit application showcasing hierarchical multi-agent collaboration using LangGraph.
+An interactive Streamlit application showcasing hierarchical multi-agent collaboration using LangGraph, **enhanced with E2E Networks LLM integration** for intelligent responses.
 
 ## 🏗️ Architecture
 
 ### Multi-Agent System
 - **🎯 Coordinator Agent**: Plans tasks, routes to specialists, aggregates results
-- **🔍 Research Agent**: Web search, information gathering
+- **🔍 Research Agent**: E2E LLM-powered information gathering and web search
 - **📊 Analysis Agent**: Mathematical calculations, data visualization  
-- **✍️ Writing Agent**: Content creation, report generation
+- **✍️ Writing Agent**: E2E LLM-powered content creation and report generation
 
 ### Simple Agent System
-- **⚡ Simple Agent**: Basic math calculations and conversations
+- **⚡ Simple Agent**: Basic math calculations and E2E LLM-powered conversations
 
 ## 🚀 Quick Start
 
@@ -20,13 +20,27 @@ An interactive Streamlit application showcasing hierarchical multi-agent collabo
 pip install -r requirements.txt
 ```
 
-### 2. Run the Streamlit App
+### 2. Set E2E Networks API Key (Optional but Recommended)
+```bash
+# Option 1: Environment Variable
+export E2E_API_KEY="your-e2e-api-key"
+export E2E_BASE_URL="https://api.e2enetworks.com/v1"  # Optional
+
+# Option 2: Set in Streamlit UI sidebar
+```
+
+### 3. Run the Streamlit App
 ```bash
 streamlit run streamlit_app.py
 ```
 
-### 3. Open in Browser
+### 4. Open in Browser
 Visit `http://localhost:8501` to access the demo interface.
+
+### 5. Configure E2E API (if not set via environment)
+- Enter your E2E Networks API key in the sidebar
+- Test the connection using the "Test E2E Connection" button
+- Enjoy enhanced AI capabilities!
 
 ## 📱 Features
 
@@ -56,12 +70,13 @@ Visit `http://localhost:8501` to access the demo interface.
 ## 📁 Project Structure
 
 ```
-├── streamlit_app.py          # Main Streamlit application
-├── agents.py                 # Individual agent implementations
+├── streamlit_app.py          # Main Streamlit application with E2E integration
+├── agents.py                 # Individual agent implementations (E2E-enhanced)
 ├── multi_agent_workflow.py   # LangGraph workflow orchestration
+├── e2e_llm_client.py         # E2E Networks LLM API client
+├── test_e2e_integration.py   # Test suite for E2E integration
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # This file
-├── Multi_Agent_System.ipynb  # Jupyter notebook implementation
 └── Simple_LangGraph_Agent.ipynb  # Simple agent notebook
 ```
 
