@@ -74,11 +74,14 @@ def advanced_calculator(expression: str) -> str:
                 return f"📊 Sum of {numbers} = {result}"
         
         # Standard calculation
-        expression = re.sub(r'[^0-9+\-*/.() ]', '', expression)
-        result = eval(expression)
-        return f"🧮 {expression} = {result}"
-    except:
-        return "❌ Error in calculation"
+        clean_expr = re.sub(r'[^0-9+\-*/.() ]', '', expression)
+        if clean_expr.strip():
+            result = eval(clean_expr)
+            return f"🧮 {clean_expr} = {result}"
+        else:
+            return "❌ No valid mathematical expression found"
+    except Exception as e:
+        return f"❌ Error in calculation: {str(e)}"
 
 @tool
 def data_visualizer(data_description: str) -> str:

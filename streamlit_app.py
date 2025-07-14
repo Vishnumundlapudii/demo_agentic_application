@@ -8,9 +8,13 @@ import time
 import json
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 from agents import SimpleAgent
 from multi_agent_workflow import MultiAgentSystem
 from e2e_llm_client import initialize_e2e_client, get_e2e_client, E2ELLMClient
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -37,18 +41,29 @@ st.sidebar.markdown("---")
 # E2E Networks API Configuration
 st.sidebar.subheader("🔧 E2E Networks Configuration")
 
+# Load from .env file first, then allow override in UI
+default_api_key = os.getenv("E2E_API_KEY", "")
+default_base_url = os.getenv("E2E_BASE_URL", "https://infer.e2enetworks.net/project/p-5861/endpoint/is-5691/v1")
+
 api_key = st.sidebar.text_input(
     "E2E API Key",
+    value=default_api_key,
     type="password",
-    help="Enter your E2E Networks API key",
+    help="Enter your E2E Networks API key (or set in .env file)",
     placeholder="sk-..."
 )
 
 base_url = st.sidebar.text_input(
-    "E2E Base URL (Optional)",
-    value="https://api.e2enetworks.com/v1",
-    help="E2E Networks API base URL"
+    "E2E Base URL",
+    value=default_base_url,
+    help="E2E Networks API base URL (or set in .env file)"
 )
+
+# Show if values are loaded from .env
+if default_api_key:
+    st.sidebar.info("🔧 API key loaded from .env file")
+if default_base_url != "https://infer.e2enetworks.net/project/p-5861/endpoint/is-5691/v1":
+    st.sidebar.info("🔧 Base URL loaded from .env file")
 
 # Initialize E2E client when API key is provided
 if api_key:
@@ -74,6 +89,12 @@ if api_key:
         st.sidebar.error(f"❌ E2E API Error: {str(e)}")
 else:
     st.sidebar.warning("⚠️ E2E API key required for enhanced features")
+    st.sidebar.markdown("""
+    **📝 Setup Instructions:**
+    1. Edit `.env` file with your credentials
+    2. Or enter API key in the field above
+    3. Get credentials from E2E Networks dashboard
+    """)
 
 st.sidebar.markdown("---")
 
@@ -273,12 +294,18 @@ if st.session_state.conversation_history:
 
 # Footer
 st.markdown("---")
+# Show configuration status
+env_status = "🔧 Configuration loaded from .env file" if default_api_key else "📝 No .env configuration found"
+st.info(env_status)
+
 # Show overall system status
 client = get_e2e_client()
 if client:
     st.success("🟢 **E2E Networks LLM**: Connected and ready for enhanced AI capabilities!")
+    st.info(f"📡 **Endpoint**: {client.base_url}")
 else:
-    st.warning("⚠️ **E2E Networks LLM**: Not connected. Using fallback responses. Add your API key in the sidebar for full functionality.")
+    st.warning("⚠️ **E2E Networks LLM**: Not connected. Using fallback responses.")
+    st.info("💡 **Setup**: Add your E2E API key in `.env` file or sidebar for full functionality.")
 
 st.markdown("""
 <div style='text-align: center'>
